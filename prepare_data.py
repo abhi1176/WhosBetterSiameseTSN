@@ -41,8 +41,8 @@ def process(resize, output_by_input):
     # Only useful for DoughRolling dataset
     frames_to_consider = {}
     with open('EPIC-Skills2018/dough_rolling_segments.csv', 'r') as file:
-        frames_to_consider = {row[0]: (row[1], row[2])
-                              for row in csv.reader(file)}
+        frames_to_consider = {row[0]: (int(row[1]), int(row[2]))
+                for idx, row in enumerate(csv.reader(file)) if idx>0}
     vfile_basename = os.path.basename(input_video_file)
     for key, value in frames_to_consider.items():
         if key in vfile_basename:
@@ -54,8 +54,8 @@ def process(resize, output_by_input):
         ret, rgb_frame = cap.read()
         if (frame_idx < start_frame):
             continue
-        rgb_file = os.path.join(output_dir, "rgb_{:04d}.npy".format(frame_idx+1))
-        flow_file = os.path.join(output_dir, "flow_{:04d}.npy".format(frame_idx+1))
+        rgb_file = os.path.join(output_dir, "rgb_{:07d}.npy".format(frame_idx+1))
+        flow_file = os.path.join(output_dir, "flow_{:07d}.npy".format(frame_idx+1))
         if resize:
             rgb_frame = cv2.resize(rgb_frame, (resize, resize))
         np.save(rgb_file, rgb_frame)
