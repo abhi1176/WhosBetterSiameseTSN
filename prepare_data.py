@@ -56,6 +56,8 @@ def process(resize, output_by_input):
             continue
         rgb_file = os.path.join(output_dir, "rgb_{:07d}.npy".format(frame_idx+1))
         flow_file = os.path.join(output_dir, "flow_{:07d}.npy".format(frame_idx+1))
+        if os.path.exists(rgb_file) and os.path.exists(flow_file):
+            continue
         if resize:
             rgb_frame = cv2.resize(rgb_frame, (resize, resize))
         np.save(rgb_file, rgb_frame)

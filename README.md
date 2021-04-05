@@ -46,3 +46,21 @@ unzip ${file}.zip && \
 done
 ```
 
+# Prepare Dataset
+
+```sh
+python prepare_data.py -n 10 -s ChopstickUsing HandDrawing SonicDrawing DoughRolling Suturing NeedlePassing KnotTying
+```
+
+
+# Prepare Annotations
+```sh
+python prepare_annotations.py
+```
+
+
+# Download AlexNet
+
+```sh
+git clone https://github.com/heuritech/convnets-keras.git
+```
