@@ -46,6 +46,7 @@ unzip ${file}.zip && \
 done
 ```
 
+
 # Prepare Dataset
 
 ```sh
@@ -54,13 +55,21 @@ python prepare_data.py -n 10 -s ChopstickUsing HandDrawing SonicDrawing DoughRol
 
 
 # Prepare Annotations
+
 ```sh
 python prepare_annotations.py
 ```
 
 
-# Download AlexNet
+# Train Spatial Model
 
 ```sh
-git clone https://github.com/heuritech/convnets-keras.git
+python train_spatial.py -s 7 -b 128
+```
+
+
+# Train Temporal Model
+
+```sh
+python train_temporal.py -s 7 -b 128
 ```
