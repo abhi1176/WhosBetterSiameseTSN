@@ -7,6 +7,8 @@ import tensorflow as tf
 from functools import partial
 from glob import glob
 
+IMAGENET_MEAN = np.array([123.68, 116.779, 103.939])
+
 def get_snippets(seq_dir, num_snippets, pattern, stack_depth):
     dirpath = os.path.join(seq_dir, pattern)
     files = sorted(list(glob(dirpath)))
@@ -19,17 +21,20 @@ def get_snippets(seq_dir, num_snippets, pattern, stack_depth):
         for i in range(stack_depth):
             data = np.load(files[choice+i]).astype(np.float32)
             data = data[:224, :224, :]
-            stack.append((data - np.mean(data))/np.std(data))
+            stack.append((data - IMAGENET_MEAN))
         stack = np.asarray(stack)
         stack = np.concatenate(stack, axis=2)
         blob.append(stack)
     return blob
 
+
 def get_rgb_snippets(seq_dir, num_snippets, pattern="rgb_*", stack_depth=1):
     return get_snippets(seq_dir, num_snippets, pattern, stack_depth=stack_depth)
 
+
 def get_flow_snippets(seq_dir, num_snippets, pattern="flow_*", stack_depth=5):
     return get_snippets(seq_dir, num_snippets, pattern, stack_depth=stack_depth)
+
 
 def snippets_generator(csv_file, num_snippets, snippets_creator):
     def process():
@@ -43,16 +48,18 @@ def snippets_generator(csv_file, num_snippets, snippets_creator):
             yield tuple(better_rgb_snippets + worse_rgb_snippets)
     return process
 
+
 def dataset_generator(csv_file, batch_size, num_snippets, snippets_creator):
     gen = snippets_generator(csv_file, num_snippets, snippets_creator)
     dataset = tf.data.Dataset.from_generator(gen, output_types=tuple([tf.float32]*2*num_snippets))
     dataset = dataset.batch(batch_size)
-    # dataset = dataset.prefetch(4)
+    dataset = dataset.prefetch(4)
     return dataset
+
 
 def get_spatial_dataset(csv_file, batch_size, num_snippets):
     return dataset_generator(csv_file, batch_size, num_snippets, get_rgb_snippets)
 
+
 def get_temporal_dataset(csv_file, batch_size, num_snippets):
     return dataset_generator(csv_file, batch_size, num_snippets, get_flow_snippets)
-

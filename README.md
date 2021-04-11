@@ -60,6 +60,11 @@ python prepare_data.py -n 10 -s ChopstickUsing HandDrawing SonicDrawing DoughRol
 python prepare_annotations.py
 ```
 
+# Get pretrained weights
+
+```sh
+wget http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/bvlc_alexnet.npy
+```
 
 # Train Spatial Model
 
