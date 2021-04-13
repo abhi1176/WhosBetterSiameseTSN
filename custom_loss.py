@@ -6,6 +6,7 @@ from tensorflow.keras import backend as K
 
 def ranking_loss(margin):
     def operation(x, label=0):
+        # print("[INFO] Ranking loss: ", x.numpy().flatten())
         x = tf.math.add(margin, x)
         x = K.maximum(x, 0)
         y = tf.reduce_sum(x, axis=1)  # Sum of errors in a batch | Shape: [batch_size]
@@ -16,10 +17,11 @@ def ranking_loss(margin):
 
 def similarity_loss(margin):
     def operation(x, label=0):
-        x = tf.math.abs(x)
-        x = tf.math.subtract(x, margin)
-        x = K.maximum(x, 0)
-        y = tf.reduce_sum(x, axis=1)  # Sum of errors in a batch | Shape: [batch_size]
+        # print("[INFO] Similarity loss: ", x.numpy().flatten())
+        x1 = tf.math.abs(x)
+        x2 = tf.math.subtract(x1, margin)
+        x3 = K.maximum(x2, 0)
+        y = tf.reduce_sum(x3, axis=1)  # Sum of errors in a batch | Shape: [batch_size]
         z = tf.reduce_mean(y)  # Average of all the elements in the batch
         return z
     return operation
@@ -27,7 +29,7 @@ def similarity_loss(margin):
 
 @tf.autograph.experimental.do_not_convert
 def custom_loss(margin, beta):
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def operation(output, label=0):
         ranking_output = output[0]
         similarity_output = output[1]
@@ -37,4 +39,3 @@ def custom_loss(margin, beta):
         return (tf.math.multiply(beta, r_loss) +
                     tf.math.multiply((1-beta), s_loss))
     return operation
-

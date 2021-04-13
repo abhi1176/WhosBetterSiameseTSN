@@ -28,7 +28,8 @@ def set_learning_rate(optimizer, iteration):
 def train_temporal_model(num_snippets=NUM_SNIPPETS, num_iterations=NUM_ITERATIONS,
                          learning_rate=LEARNING_RATE, batch_size=BATCH_SIZE,
                          momentum=MOMENTUM, margin=MARGIN, beta=BETA):
-    model = create_model(num_snippets=num_snippets, num_input_channels=10)
+    model = create_model(num_snippets=num_snippets, num_input_channels=2*5,
+                         plot_model_as='temporal_model.png')
     train_dataset = get_temporal_dataset("train.csv", batch_size, num_snippets)
     val_dataset = get_temporal_dataset("val.csv", 2, num_snippets)
     optimizer = SGD(lr=learning_rate)

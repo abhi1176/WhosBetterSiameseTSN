@@ -3,6 +3,8 @@ import math
 import os
 
 from argparse import ArgumentParser
+import tensorflow as tf
+# tf.compat.v1.enable_eager_execution()
 # from tensorflow.keras.callbacks import Callback, LearningRateScheduler, ModelCheckpoint
 from tensorflow.keras.optimizers import SGD, Adam
 from time import time

@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Concatenate, Input, Lambda, Subtract
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import plot_model
 
-from AlexNet import AlexNet
+# from AlexNet import AlexNet
 from alexnet_func_cpu import tsn_alexnet
 from custom_loss import custom_loss
 from custom_loss import ranking_loss, similarity_loss
@@ -33,7 +33,7 @@ def create_model(num_snippets, num_input_channels, plot_model_as=None):
     ranking_outputs = []
     similarity_outputs = []
     # base_model = create_base_model()
-    base_model = tsn_alexnet()
+    base_model = tsn_alexnet(input_shape=(224, 224, num_input_channels))
     # base_model.summary()
     for i in range(num_snippets):
         better_input_layer = Input(shape=(224, 224, num_input_channels),
@@ -44,7 +44,6 @@ def create_model(num_snippets, num_input_channels, plot_model_as=None):
         worse_skill = base_model(worse_input_layer)
         diff_ranking = Subtract(name='diff_ranking_{}'.format(i))([worse_skill, better_skill])
         diff_similarity = Subtract(name='diff_similarity_{}'.format(i))([better_skill, worse_skill])
-        # inputs.extend([better_input_layer, worse_input_layer])
         better_inputs.append(better_input_layer)
         worse_inputs.append(worse_input_layer)
         ranking_outputs.append(diff_ranking)
@@ -62,13 +61,17 @@ def create_model(num_snippets, num_input_channels, plot_model_as=None):
         s_output = Lambda(lambda x: x, name="similarity_concat")(s_output)
         outputs = [r_output, s_output]
     model = Model(inputs=inputs, outputs=outputs)
-    if plot_model_as:
-        plot_model(model, to_file=plot_model_as, show_shapes=True,
-                   show_layer_names=True)
+    try:
+        if plot_model_as:
+            plot_model(model, to_file=plot_model_as, show_shapes=True,
+                       show_layer_names=True)
+    except Exception as e:
+        print("[EXCEPTION] Unable to plot model..")
+        print(e.message)
     return model
 
 
-@tf.function
+# @tf.function
 def train_step(model, optimizer, margin, beta, batch):
     with tf.GradientTape() as tape:
         y = model(batch, training=True)

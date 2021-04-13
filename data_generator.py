@@ -6,10 +6,13 @@ import tensorflow as tf
 
 from functools import partial
 from glob import glob
+from skimage.transform import resize
+
 
 IMAGENET_MEAN = np.array([123.68, 116.779, 103.939])
 
-def get_snippets(seq_dir, num_snippets, pattern, stack_depth):
+
+def get_snippets(seq_dir, num_snippets, pattern, stack_depth, clip=None):
     dirpath = os.path.join(seq_dir, pattern)
     files = sorted(list(glob(dirpath)))
     num_files = len(files)
@@ -20,8 +23,12 @@ def get_snippets(seq_dir, num_snippets, pattern, stack_depth):
         stack = []
         for i in range(stack_depth):
             data = np.load(files[choice+i]).astype(np.float32)
-            data = data[:224, :224, :]
-            stack.append((data - IMAGENET_MEAN))
+            data = resize(data, (224, 224))
+            if clip and pattern == "flow_*":
+                data = ((data + clip)/(2*clip))*255.0
+            else:
+                data = data - IMAGENET_MEAN
+            stack.append(data)
         stack = np.asarray(stack)
         stack = np.concatenate(stack, axis=2)
         blob.append(stack)
@@ -32,8 +39,8 @@ def get_rgb_snippets(seq_dir, num_snippets, pattern="rgb_*", stack_depth=1):
     return get_snippets(seq_dir, num_snippets, pattern, stack_depth=stack_depth)
 
 
-def get_flow_snippets(seq_dir, num_snippets, pattern="flow_*", stack_depth=5):
-    return get_snippets(seq_dir, num_snippets, pattern, stack_depth=stack_depth)
+def get_flow_snippets(seq_dir, num_snippets, pattern="flow_*", stack_depth=5, clip=15):
+    return get_snippets(seq_dir, num_snippets, pattern, stack_depth=stack_depth, clip=15)
 
 
 def snippets_generator(csv_file, num_snippets, snippets_creator):

@@ -19,8 +19,8 @@ from tensorflow.keras.layers import Input, Dense, Flatten, Conv2D, \
     MaxPooling2D, Dropout, Lambda, Concatenate
 
 
-def tsn_alexnet(weights_file="bvlc_alexnet.npy"):
-    input_ = Input(shape=(224, 224, 3))
+def tsn_alexnet(input_shape, weights_file="bvlc_alexnet.npy"):
+    input_ = Input(shape=input_shape)
 
     x = Conv2D(filters=96, kernel_size=(11,11), strides=4,
                padding='valid', activation='relu',
@@ -102,7 +102,11 @@ def tsn_alexnet(weights_file="bvlc_alexnet.npy"):
 
     print("[INFO] Loading pretrained weights...")
     net_data = np.load(open(weights_file, "rb"), encoding="latin1", allow_pickle=True).item()
-    layers = ['conv1', 'conv2_a', 'conv2_b', 'conv3', 'conv4_a', 'conv4_b', 'conv5_a', 'conv5_b']
+
+    layers = ['conv2_a', 'conv2_b', 'conv3', 'conv4_a', 'conv4_b', 'conv5_a', 'conv5_b']
+
+    if input_shape[2] == 3:
+        layers = ["conv1"] + layers
 
     net_data['conv2_a'] = [net_data['conv2'][0][..., :128], net_data['conv2'][1][..., :128]]
     net_data['conv2_b'] = [net_data['conv2'][0][..., 128:], net_data['conv2'][1][..., 128:]]
@@ -113,8 +117,11 @@ def tsn_alexnet(weights_file="bvlc_alexnet.npy"):
     net_data['conv5_a'] = [net_data['conv5'][0][..., :128], net_data['conv5'][1][..., :128]]
     net_data['conv5_b'] = [net_data['conv5'][0][..., 128:], net_data['conv5'][1][..., 128:]]
 
-    for layer in layers:
-        model.get_layer(name=layer).set_weights(net_data[layer])
+    for layer_name in layers:
+        print("[INFO] Setting weights for layer: {}".format(layer_name))
+        layer = model.get_layer(layer_name)
+        layer.set_weights(net_data[layer_name])
+
     return model
 
 

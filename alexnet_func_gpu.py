@@ -19,8 +19,8 @@ from tensorflow.keras.layers import Input, Dense, Flatten, Conv2D, \
     MaxPooling2D, Dropout, Lambda
 
 
-def tsn_alexnet(weights_file="bvlc_alexnet.npy"):
-    input_ = Input(shape=(224, 224, 3))
+def tsn_alexnet(input_shape, weights_file="bvlc_alexnet.npy"):
+    input_ = Input(shape=input_shape)
 
     x = Conv2D(filters=96, kernel_size=(11,11), strides=4,
                padding='valid', activation='relu',
@@ -78,7 +78,12 @@ def tsn_alexnet(weights_file="bvlc_alexnet.npy"):
 
     print("[INFO] Loading pretrained weights...")
     net_data = np.load(open(weights_file, "rb"), encoding="latin1", allow_pickle=True).item()
-    layers = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5']
+
+    layers = ['conv2', 'conv3', 'conv4', 'conv5']
+
+    if input_shape[2] == 3:
+        layers = ["conv1"] + layers
+
     for layer in layers:
         lay = model.get_layer(name=layer)
         print(lay.name, lay.output_shape, lay.get_weights()[0].shape, net_data[layer][0].shape)
