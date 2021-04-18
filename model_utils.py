@@ -42,5 +42,5 @@ def create_model(num_snippets, num_input_channels, plot_model_as=None):
                        show_layer_names=True)
     except Exception as e:
         print("[EXCEPTION] Unable to plot model..")
-        print(e.message)
+        print(e)
     return model

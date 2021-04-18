@@ -46,9 +46,8 @@ def train_step(model, batch):
 def validate_batch(model, batch):
     X, y = batch
     outputs = model(X, training=False)
-    # better_skills, worse_skills = outputs
-    # for b_skill, w_skill in zip(better_skills, worse_skills):
-    #     print(b_skill, w_skill)
+    for i in range(len(outputs)//2):
+        print(outputs[2*i][0].numpy(), "x", outputs[2*i+1][0].numpy())
     val_loss = loss_fn(outputs, y)
     return val_loss
 
@@ -66,34 +65,29 @@ if __name__ == "__main__":
     train_dataset = get_temporal_dataset("train.csv", args.batch_size, args.snippets)
     val_dataset = get_temporal_dataset("val.csv", args.validation_batch_size, args.snippets)
 
-    num_records = 5836
+    train_iterator = iter(train_dataset)
+    val_iterator = iter(val_dataset)
+
     models_dir = "temporal_models"
     os.makedirs(models_dir, exist_ok=True)
 
-    iters_per_epoch = math.ceil(num_records/args.batch_size)
-    epochs = max(1, math.ceil(args.iterations/iters_per_epoch))
+    start_time = time()
+    for iteration in range(1, args.iterations+1):
+        if (iteration % 10000 == 0) or (iteration % 16000 == 0):
+            K.set_value(optimizer.learning_rate, optimizer.learning_rate*0.1)
+        train_batch = train_iterator.get_next()
+        train_start = time()
+        loss = train_step(model, train_batch)
+        logger.info("Train step: {}/{} | loss: {:.3f} | train_step: {:.3f} s | loop: {:.3f} s"
+              .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
+        print("Train step: {}/{} | loss: {:.3f} | train_step: {:.3f} s | loop: {:.3f} s"
+              .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
+        if (iteration % 100 == 0) or iteration == args.iterations:
+            val_batch = val_iterator.get_next()
+            val_loss = validate_batch(model, val_batch)
+            logger.info("Val loss: {:.3f}".format(val_loss))
+            print("Val loss: {:.3f}\n".format(val_loss))
 
-    iteration = 0
-    for epoch in range(epochs):
-        logger.info("====== Epoch: {}/{}".format(epoch+1, epochs))
-        print("====== Epoch: {}/{}".format(epoch+1, epochs))
+            save_path = os.path.join(models_dir, "temporal_model_iter_{:03d}".format(iteration))
+            model.save(save_path)
         start_time = time()
-        for idx, train_batch in enumerate(train_dataset):
-            if (iteration > 0) and (iteration % 10000 == 0 or iteration % 16000 == 0):
-                K.set_value(optimizer.learning_rate, optimizer.learning_rate*0.1)
-            if iteration == args.iterations:
-                break
-            loss = train_step(model, train_batch)
-            iteration += 1
-            logger.info("Train step: {}/{} | Loss: {:.3f} | Time taken: {:.3f} s"
-                  .format(idx, iters_per_epoch, loss, time()-start_time))
-            print("Train step: {}/{} | Loss: {:.3f} | Time taken: {:.3f} s"
-                  .format(idx, iters_per_epoch, loss, time()-start_time))
-            start_time = time()
-            for val_batch in val_dataset:
-                val_loss = validate_batch(model, val_batch)
-                logger.info("Val loss: {:.3f}".format(val_loss))
-                print("Val loss: {:.3f}\n".format(val_loss))
-                break
-        save_path = os.path.join(models_dir, "temporal_model_epoch_{:03d}".format(epoch))
-        model.save(save_path)

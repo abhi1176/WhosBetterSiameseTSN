@@ -44,15 +44,25 @@ if __name__ == "__main__":
         similar_df = similar_df.applymap(lambda x: os.path.join(
             args.dataset, dirname_by_seq.get(sequence, sequence), x))
         similar_df['label'] = pd.Series([0] * similar_df.shape[0])
+        # print(train_df.shape, similar_df.shape)
         all_train_df = all_train_df.append(similar_df)
 
-        for val_csv in val_csvs:
-            df = pd.read_csv(val_csv, usecols=columns)
-            val_df = val_df.append(df)
-        val_df = val_df.applymap(lambda x: os.path.join(
-            args.dataset, dirname_by_seq.get(sequence, sequence), x))
-        all_val_df = all_val_df.append(val_df)
-        all_val_df['label'] = pd.Series([1] * all_val_df.shape[0])
+        # for val_csv in val_csvs:
+        #     df = pd.read_csv(val_csv, usecols=columns)
+        #     val_df = val_df.append(df)
+        # val_df = val_df.applymap(lambda x: os.path.join(
+        #     args.dataset, dirname_by_seq.get(sequence, sequence), x))
+        # all_val_df = all_val_df.append(val_df)
+        # all_val_df['label'] = pd.Series([1] * all_val_df.shape[0])
 
-    all_train_df.to_csv("train.csv", index=False)
-    all_val_df.to_csv("val.csv", index=False)
+    all_train_df.reset_index(inplace=True)
+    all_train_df.drop_duplicates(inplace=True)
+    train_percent = 0.8
+    all_train_df = all_train_df.sample(frac=1)
+    boundary = int(all_train_df.shape[0]*train_percent)
+    train_split = all_train_df.iloc[:boundary, :]
+    val_split = all_train_df.iloc[boundary:, :]
+    print("Train split: ", train_split.shape)
+    print("Val split: ", val_split.shape)
+    train_split.to_csv("train.csv", index=False)
+    val_split.to_csv("val.csv", index=False)

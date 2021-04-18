@@ -26,8 +26,9 @@ def get_snippets(seq_dir, num_snippets, pattern, stack_depth, clip=None):
             data = resize(data, (224, 224))
             if clip and pattern == "flow_*":
                 data = ((data + clip)/(2*clip))*255.0
-            else:
-                data = data - IMAGENET_MEAN
+            # else:
+            #     data = data - IMAGENET_MEAN
+            data = data - np.mean(data, axis=(0, 1))
             stack.append(data)
         stack = np.asarray(stack)
         stack = np.concatenate(stack, axis=2)
@@ -46,8 +47,9 @@ def get_flow_snippets(seq_dir, num_snippets, pattern="flow_*", stack_depth=5, cl
 def snippets_generator(csv_file, num_snippets, snippets_creator):
     def process():
         df = pd.read_csv(csv_file)
-        df = df.sample(frac=1)  # Shuffle
-        for index, row in df.iterrows():
+        while True:
+            sample_df = df.sample(1)
+            row = sample_df.iloc[0, :]
             # print("[INFO] Generating the snippets for row: {} | Better: {} | Worse: {}"
             #       .format(index, row['Better'], row['Worse']))
             better_rgb_snippets = snippets_creator(row['Better'], num_snippets)
@@ -62,7 +64,7 @@ def dataset_generator(csv_file, batch_size, num_snippets, snippets_creator):
     dataset = tf.data.Dataset.from_generator(
         gen, output_types=(tuple([tf.float32]*2*num_snippets), tf.int32))
     dataset = dataset.batch(batch_size)
-    dataset = dataset.prefetch(4)
+    dataset = dataset.prefetch(64)
     return dataset
 
 
