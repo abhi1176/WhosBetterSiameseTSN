@@ -4,38 +4,21 @@ import numpy as np
 from tensorflow.keras import backend as K
 
 
-def ranking_loss(margin):
-    def operation(x, label=0):
-        # print("[INFO] Ranking loss: ", x.numpy().flatten())
-        x = tf.math.add(margin, x)
-        x = K.maximum(x, 0)
-        y = tf.reduce_sum(x, axis=1)  # Sum of errors in a batch | Shape: [batch_size]
-        z = tf.reduce_mean(y)  # Average of all the elements in the batch
-        return z
-    return operation
-
-
-def similarity_loss(margin):
-    def operation(x, label=0):
-        # print("[INFO] Similarity loss: ", x.numpy().flatten())
-        x1 = tf.math.abs(x)
-        x2 = tf.math.subtract(x1, margin)
-        x3 = K.maximum(x2, 0)
-        y = tf.reduce_sum(x3, axis=1)  # Sum of errors in a batch | Shape: [batch_size]
-        z = tf.reduce_mean(y)  # Average of all the elements in the batch
-        return z
-    return operation
-
-
 @tf.autograph.experimental.do_not_convert
-def custom_loss(margin, beta):
-    # @tf.autograph.experimental.do_not_convert
-    def operation(output, label=0):
-        ranking_output = output[0]
-        similarity_output = output[1]
-        r_loss = ranking_loss(margin)(ranking_output)
-        s_loss = similarity_loss(margin)(similarity_output)
-        # print("r_loss: {} | s_loss: {}".format(r_loss.numpy(), s_loss.numpy()))
-        return (tf.math.multiply(beta, r_loss) +
-                    tf.math.multiply((1-beta), s_loss))
+def get_custom_loss(margin, beta):
+    def operation(outputs, y):
+        ranking_loss = 0
+        similarity_loss = 0
+        y = tf.cast(y, tf.float32)  # y = [1 for distinguishable_pair, 0 if similar_pair]
+        for i in range(0, len(outputs)//2):
+            better_skill = outputs[2*i]
+            worse_skill = outputs[2*i+1]
+            sig1 = tf.math.sigmoid(better_skill - worse_skill)
+            sig2 = tf.math.sigmoid(K.abs(better_skill - worse_skill))
+            ranking_loss += K.mean(y*K.maximum(0.0, margin - sig1))
+            similarity_loss += K.mean((1.0-y) * K.maximum(0.0, sig2 - margin))
+            # ranking_loss += K.mean(y * K.maximum(0.0, margin - better_skill + worse_skill))
+            # similarity_loss += K.mean((1.0-y) * K.maximum(0.0, K.abs(better_skill - worse_skill) - margin))
+        return (tf.math.multiply(beta, ranking_loss) +
+                    tf.math.multiply((1-beta), similarity_loss))
     return operation

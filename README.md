@@ -57,6 +57,13 @@ python prepare_data.py -n 10 -s ChopstickUsing HandDrawing SonicDrawing DoughRol
 # Prepare Annotations
 
 ```sh
+python find_similar_pairs.py -s Chopstick_Using
+python find_similar_pairs.py -s Hand_Drawing
+python find_similar_pairs.py -s Sonic_Drawing
+python find_similar_pairs.py -s Dough_Rolling
+python find_similar_pairs.py -s Suturing
+python find_similar_pairs.py -s Needle_Passing
+python find_similar_pairs.py -s Knot_Tying
 python prepare_annotations.py
 ```
 
@@ -69,12 +76,12 @@ wget http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/bvlc_alexnet.npy
 # Train Spatial Model
 
 ```sh
-python train_spatial.py -s 7 -b 128
+python train_spatial.py
 ```
 
 
 # Train Temporal Model
 
 ```sh
-python train_temporal.py -s 7 -b 128
+python train_temporal.py
 ```

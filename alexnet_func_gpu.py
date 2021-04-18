@@ -73,7 +73,7 @@ def tsn_alexnet(input_shape, weights_file="bvlc_alexnet.npy"):
     x = Dense(4096, activation='relu', name='fc7')(x)
     x = Dropout(0.5)(x)
 
-    x = Dense(1, activation='sigmoid', name='fc8')(x)
+    x = Dense(1, name='fc8')(x)
     model = Model(inputs=input_, outputs=x)
 
     print("[INFO] Loading pretrained weights...")

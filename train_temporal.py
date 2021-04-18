@@ -1,69 +1,99 @@
 
+import logging
 import math
 import os
 
 from argparse import ArgumentParser
+import tensorflow as tf
+# tf.compat.v1.enable_eager_execution()
 # from tensorflow.keras.callbacks import Callback, LearningRateScheduler, ModelCheckpoint
 from tensorflow.keras.optimizers import SGD, Adam
 from time import time
+from tensorflow.keras import backend as K
 
 from data_generator import get_temporal_dataset
-from model_utils import create_model, train_step, validate_batch
+from model_utils import create_model
+from custom_loss import get_custom_loss
 
+logging.basicConfig(filename='log_train_temporal.log', level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 NUM_SNIPPETS = 7
-NUM_ITERATIONS = 3500
+NUM_ITERATIONS = 18000
 MARGIN = 1.0
 BETA = 0.5
 BATCH_SIZE = 128
 MOMENTUM = 0.9  # SGD
 LEARNING_RATE = 5e-3
+VALIDATION_BATCH_SIZE = 32
+
+optimizer = SGD(lr=LEARNING_RATE, momentum=MOMENTUM)
+loss_fn = get_custom_loss(MARGIN, BETA)
 
 
-def set_learning_rate(optimizer, iteration):
-    if (iteration > 0) and (iteration % 10000 == 0 or iteration % 16000 == 0):
-        optimizer.lr = optimizer.lr * 0.1
+@tf.function
+def train_step(model, batch):
+    with tf.GradientTape() as tape:
+        X, y = batch
+        outputs = model(X, training=True)
+        loss = loss_fn(outputs, y)
+    model_gradient = tape.gradient(loss, model.trainable_variables)
+    optimizer.apply_gradients(zip(model_gradient, model.trainable_variables))
+    return loss
 
 
-def train_temporal_model(num_snippets=NUM_SNIPPETS, num_iterations=NUM_ITERATIONS,
-                         learning_rate=LEARNING_RATE, batch_size=BATCH_SIZE,
-                         momentum=MOMENTUM, margin=MARGIN, beta=BETA):
-    model = create_model(num_snippets=num_snippets, num_input_channels=2*5,
-                         plot_model_as='temporal_model.png')
-    train_dataset = get_temporal_dataset("train.csv", batch_size, num_snippets)
-    val_dataset = get_temporal_dataset("val.csv", 2, num_snippets)
-    optimizer = SGD(lr=learning_rate)
-    epochs = max(1, math.ceil(num_iterations/batch_size))
-    iteration = 0
-    for epoch in range(epochs):
-        for train_batch in train_dataset:
-            set_learning_rate(optimizer, iteration)
-            if iteration == num_iterations:
-                break
-            start_time = time()
-            model_gradient, losses = train_step(model, optimizer, margin, beta, train_batch)
-            iteration += 1
-            print("Train step: {}/{} | Loss: {:.3f}/{:.3f} | Time taken: {:.3f} s"
-                  .format(iteration, num_iterations, losses[0], losses[1], time()-start_time))
-        # for val_batch in val_dataset:
-        #     val_loss = validate_batch(model, margin, beta, val_batch)
-        #     print("Val loss: {:.3f} / {:.3f}".format(val_loss[0], val_loss[1]))
-    return model
+def validate_batch(model, batch):
+    X, y = batch
+    outputs = model(X, training=False)
+    # better_skills, worse_skills = outputs
+    # for b_skill, w_skill in zip(better_skills, worse_skills):
+    #     print(b_skill, w_skill)
+    val_loss = loss_fn(outputs, y)
+    return val_loss
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-s", "--snippets", type=int, default=NUM_SNIPPETS)
     parser.add_argument("-b", "--batch-size", type=int, default=BATCH_SIZE)
-    parser.add_argument("-e", "--epochs", type=int)
+    parser.add_argument("-vb", "--validation-batch-size", type=int, default=VALIDATION_BATCH_SIZE)
     parser.add_argument("-i", "--iterations", type=int, default=NUM_ITERATIONS)
-    parser.add_argument("-lm", "--margin", type=float, default=MARGIN)
-    parser.add_argument("-lb", "--beta", type=float, default=BETA)
-    parser.add_argument("-lr", "--learning-rate", type=float, default=LEARNING_RATE)
-    parser.add_argument("-m", "--momentum", type=float, default=MOMENTUM)
     args = parser.parse_args()
 
-    os.makedirs("models", exist_ok=True)
+    model = create_model(num_snippets=args.snippets, num_input_channels=10,
+                         plot_model_as='temporal_model.png')
+    train_dataset = get_temporal_dataset("train.csv", args.batch_size, args.snippets)
+    val_dataset = get_temporal_dataset("val.csv", args.validation_batch_size, args.snippets)
 
-    train_temporal_model(args.snippets, args.iterations, args.learning_rate,
-                         args.batch_size, args.momentum, args.margin, args.beta)
+    num_records = 5836
+    models_dir = "temporal_models"
+    os.makedirs(models_dir, exist_ok=True)
+
+    iters_per_epoch = math.ceil(num_records/args.batch_size)
+    epochs = max(1, math.ceil(args.iterations/iters_per_epoch))
+
+    iteration = 0
+    for epoch in range(epochs):
+        logger.info("====== Epoch: {}/{}".format(epoch+1, epochs))
+        print("====== Epoch: {}/{}".format(epoch+1, epochs))
+        start_time = time()
+        for idx, train_batch in enumerate(train_dataset):
+            if (iteration > 0) and (iteration % 10000 == 0 or iteration % 16000 == 0):
+                K.set_value(optimizer.learning_rate, optimizer.learning_rate*0.1)
+            if iteration == args.iterations:
+                break
+            loss = train_step(model, train_batch)
+            iteration += 1
+            logger.info("Train step: {}/{} | Loss: {:.3f} | Time taken: {:.3f} s"
+                  .format(idx, iters_per_epoch, loss, time()-start_time))
+            print("Train step: {}/{} | Loss: {:.3f} | Time taken: {:.3f} s"
+                  .format(idx, iters_per_epoch, loss, time()-start_time))
+            start_time = time()
+            for val_batch in val_dataset:
+                val_loss = validate_batch(model, val_batch)
+                logger.info("Val loss: {:.3f}".format(val_loss))
+                print("Val loss: {:.3f}\n".format(val_loss))
+                break
+        save_path = os.path.join(models_dir, "temporal_model_epoch_{:03d}".format(epoch))
+        model.save(save_path)

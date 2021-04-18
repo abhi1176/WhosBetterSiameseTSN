@@ -52,13 +52,15 @@ def snippets_generator(csv_file, num_snippets, snippets_creator):
             #       .format(index, row['Better'], row['Worse']))
             better_rgb_snippets = snippets_creator(row['Better'], num_snippets)
             worse_rgb_snippets = snippets_creator(row['Worse'], num_snippets)
-            yield tuple(better_rgb_snippets + worse_rgb_snippets)
+            labels = row['label']
+            yield tuple(better_rgb_snippets + worse_rgb_snippets), labels
     return process
 
 
 def dataset_generator(csv_file, batch_size, num_snippets, snippets_creator):
     gen = snippets_generator(csv_file, num_snippets, snippets_creator)
-    dataset = tf.data.Dataset.from_generator(gen, output_types=tuple([tf.float32]*2*num_snippets))
+    dataset = tf.data.Dataset.from_generator(
+        gen, output_types=(tuple([tf.float32]*2*num_snippets), tf.int32))
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(4)
     return dataset
