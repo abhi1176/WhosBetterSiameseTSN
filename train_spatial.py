@@ -42,12 +42,16 @@ def train_step(model, batch):
     return loss
 
 
-def validate_batch(model, batch):
-    X, y = batch
+def validate_batch(model, val_iterator):
+    val_batch = val_iterator.get_next()
+    X, y = val_batch
     outputs = model(X, training=False)
     for i in range(len(outputs)//2):
         print(outputs[2*i][0].numpy(), "x", outputs[2*i+1][0].numpy())
+        logger.info(outputs[2*i][0].numpy(), "x", outputs[2*i+1][0].numpy())
     val_loss = loss_fn(outputs, y)
+    logger.info("Val loss: {:.3f}".format(val_loss))
+    print("Val loss: {:.3f}\n".format(val_loss))
     return val_loss
 
 
@@ -81,12 +85,12 @@ if __name__ == "__main__":
               .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
         print("Train step: {}/{} | loss: {:.3f} | train_step: {:.3f} s | loop: {:.3f} s"
               .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
-        if (iteration % 100 == 0) or iteration == args.iterations:
-            val_batch = val_iterator.get_next()
-            val_loss = validate_batch(model, val_batch)
-            logger.info("Val loss: {:.3f}".format(val_loss))
-            print("Val loss: {:.3f}\n".format(val_loss))
-
+        if iteration % 100 == 0:
+            val_loss = validate_batch(model, val_iterator)
             save_path = os.path.join(models_dir, "spatial_model_iter_{:03d}".format(iteration))
             model.save(save_path)
         start_time = time()
+
+    val_loss = validate_batch(model, val_iterator)
+    save_path = os.path.join(models_dir, "spatial_model_iter_last")
+    model.save(save_path)
