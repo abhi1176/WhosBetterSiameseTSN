@@ -140,7 +140,7 @@ if __name__ == "__main__":
     consistent_df.drop_duplicates(inplace=True)
 
     all_videos = os.listdir(
-        os.path.join("/proj/sdxapps/users/akorra/frames/",
+        os.path.join("frames",
                      frames_by_dir.get(args.sequence, args.sequence)))
     count = len(all_videos)
     all_pairs = list(combinations(all_videos, 2))

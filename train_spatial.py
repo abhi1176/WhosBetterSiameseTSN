@@ -46,6 +46,7 @@ def validate_batch(model, val_iterator):
     val_batch = val_iterator.get_next()
     X, y = val_batch
     outputs = model(X, training=False)
+    print("Length of outputs:", len(outputs))
     for i in range(len(outputs)//2):
         print(outputs[2*i][0].numpy(), "x", outputs[2*i+1][0].numpy())
         logger.info(outputs[2*i][0].numpy(), "x", outputs[2*i+1][0].numpy())
@@ -85,7 +86,7 @@ if __name__ == "__main__":
               .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
         print("Train step: {}/{} | loss: {:.3f} | train_step: {:.3f} s | loop: {:.3f} s"
               .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
-        if iteration % 100 == 0:
+        if iteration % 2 == 0:
             val_loss = validate_batch(model, val_iterator)
             save_path = os.path.join(models_dir, "spatial_model_iter_{:03d}".format(iteration))
             model.save(save_path)

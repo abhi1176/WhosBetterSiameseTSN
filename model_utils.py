@@ -6,7 +6,7 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.utils import plot_model
 
 from alexnet_func_cpu import tsn_alexnet
-from p2k.alexnet_pytorch_to_keras import create_keras_alexnet
+# from p2k.alexnet_pytorch_to_keras import create_keras_alexnet
 from custom_loss import get_custom_loss
 
 # base_model_file = 'p2k/keras_alexnet_imagenet'

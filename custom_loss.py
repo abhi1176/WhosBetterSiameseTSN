@@ -17,8 +17,8 @@ def get_custom_loss(margin, beta):
             # sig2 = tf.math.sigmoid(K.abs(better_skill - worse_skill))
             # ranking_loss += K.mean(y*K.maximum(0.0, margin - sig1))
             # similarity_loss += K.mean((1.0-y) * K.maximum(0.0, sig2 - margin))
-            ranking_loss += K.mean(y * K.maximum(0.0, margin - better_skill + worse_skill))
-            similarity_loss += K.mean((1.0-y) * K.maximum(0.0, K.abs(better_skill - worse_skill) - margin))
-        return (tf.math.multiply(beta, ranking_loss) +
-                    tf.math.multiply((1-beta), similarity_loss))
+            ranking_loss += y * K.maximum(0.0, margin - better_skill + worse_skill)
+            similarity_loss += (1.0-y) * K.maximum(0.0, K.abs(better_skill - worse_skill) - margin)
+        return (tf.math.multiply(beta, K.sum(ranking_loss)) +
+                    tf.math.multiply((1-beta), K.sum(similarity_loss)))
     return operation

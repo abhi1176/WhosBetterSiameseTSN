@@ -50,13 +50,15 @@ done
 # Prepare Dataset
 
 ```sh
-python prepare_data.py -n 10 -s ChopstickUsing HandDrawing SonicDrawing DoughRolling Suturing NeedlePassing KnotTying
+python prepare_data.py -n 10 -s ChopstickUsing HandDrawing SonicDrawing DoughRolling Suturing Needle_Passing Knot_Tying
 ```
 
 
 # Prepare Annotations
 
 ```sh
+python rename_frames_dir.py
+
 python find_similar_pairs.py -s Chopstick_Using
 python find_similar_pairs.py -s Hand_Drawing
 python find_similar_pairs.py -s Sonic_Drawing
@@ -64,6 +66,7 @@ python find_similar_pairs.py -s Dough_Rolling
 python find_similar_pairs.py -s Suturing
 python find_similar_pairs.py -s Needle_Passing
 python find_similar_pairs.py -s Knot_Tying
+
 python prepare_annotations.py
 ```
 
