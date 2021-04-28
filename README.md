@@ -47,10 +47,26 @@ done
 ```
 
 
+# Setup
+
+## Create conda environment
+```sh
+conda create -n ai python=3.8
+conda activate ai
+```
+
+## Install packages
+```sh
+conda install tensorflow-gpu
+pip install opencv-python
+conda install numpy pandas scikit-image pydot
+```
+
+
 # Prepare Dataset
 
 ```sh
-python prepare_data.py -n 10 -s ChopstickUsing HandDrawing SonicDrawing DoughRolling Suturing Needle_Passing Knot_Tying
+python prepare_data.py -w 10 -s ChopstickUsing HandDrawing SonicDrawing DoughRolling Suturing Needle_Passing Knot_Tying
 ```
 
 
