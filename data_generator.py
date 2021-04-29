@@ -12,65 +12,78 @@ from skimage.transform import resize
 IMAGENET_MEAN = np.array([123.68, 116.779, 103.939])
 
 
-def get_snippets(seq_dir, num_snippets, pattern, stack_depth, clip=None):
-    dirpath = os.path.join(seq_dir, pattern)
+def get_rgb_snippets(seq_dir, num_snippets):
+    dirpath = os.path.join(seq_dir, "rgb_*")
     files = sorted(list(glob(dirpath)))
     num_files = len(files)
-    blob = []
-    boundaries = np.linspace(0, num_files, num_snippets+1, dtype=int)
-    for first, second in zip(boundaries, boundaries[1:]):
-        choice = np.random.randint(first, second-stack_depth)
-        stack = []
-        for i in range(stack_depth):
-            data = np.load(files[choice+i]).astype(np.float32)
-            data = resize(data, (224, 224))
-            if clip and pattern == "flow_*":
-                data = ((data + clip)/(2*clip))*255.0
-            # else:
-            #     data = data - IMAGENET_MEAN
-            data = data - np.mean(data, axis=(0, 1))
-            stack.append(data)
-        stack = np.asarray(stack)
-        stack = np.concatenate(stack, axis=2)
-        blob.append(stack)
+    blob = np.empty((num_snippets, 224, 224, 3))
+    boundaries = np.linspace(0, num_files-1, num_snippets+1, dtype=int)
+    for idx, (first, second) in enumerate(zip(boundaries, boundaries[1:])):
+        choice = np.random.randint(first, second)
+        data = np.load(files[choice]).astype(np.float32)
+        data = resize(data, (224, 224))
+        data = data - np.mean(data, axis=(0, 1))
+        blob[idx, ...] = data
     return blob
 
 
-def get_rgb_snippets(seq_dir, num_snippets, pattern="rgb_*", stack_depth=1):
-    return get_snippets(seq_dir, num_snippets, pattern, stack_depth=stack_depth)
-
-
-def get_flow_snippets(seq_dir, num_snippets, pattern="flow_*", stack_depth=5, clip=15):
-    return get_snippets(seq_dir, num_snippets, pattern, stack_depth=stack_depth, clip=15)
-
-
-def snippets_generator(csv_file, num_snippets, snippets_creator):
+def rgb_snippets_generator(csv_file, num_snippets):
     def process():
         df = pd.read_csv(csv_file)
         while True:
             sample_df = df.sample(1)
             row = sample_df.iloc[0, :]
-            # print("[INFO] Generating the snippets for row: {} | Better: {} | Worse: {}"
-            #       .format(index, row['Better'], row['Worse']))
-            better_rgb_snippets = snippets_creator(row['Better'], num_snippets)
-            worse_rgb_snippets = snippets_creator(row['Worse'], num_snippets)
+            better_rgb_snippets = get_rgb_snippets(row['Better'], num_snippets)
+            worse_rgb_snippets = get_rgb_snippets(row['Worse'], num_snippets)
             labels = row['label']
-            yield tuple(better_rgb_snippets + worse_rgb_snippets), labels
+            yield (better_rgb_snippets, worse_rgb_snippets), labels
     return process
 
 
-def dataset_generator(csv_file, batch_size, num_snippets, snippets_creator):
-    gen = snippets_generator(csv_file, num_snippets, snippets_creator)
+def get_spatial_dataset(csv_file, batch_size, num_snippets):
+    gen = rgb_snippets_generator(csv_file, num_snippets)
     dataset = tf.data.Dataset.from_generator(
-        gen, output_types=(tuple([tf.float32]*2*num_snippets), tf.int32))
+        gen, output_types=((tf.float32, tf.float32), tf.int32))
     dataset = dataset.batch(batch_size)
-    dataset = dataset.prefetch(64)
+    dataset = dataset.prefetch(2)
     return dataset
 
 
-def get_spatial_dataset(csv_file, batch_size, num_snippets):
-    return dataset_generator(csv_file, batch_size, num_snippets, get_rgb_snippets)
+def get_flow_snippets(seq_dir, num_snippets, stack_depth=5, clip=15):
+    dirpath = os.path.join(seq_dir, "flow_*")
+    files = sorted(list(glob(dirpath)))
+    num_files = len(files)
+    blob = np.empty((num_snippets, 224, 224, 2*stack_depth))
+    boundaries = np.linspace(0, num_files-1, num_snippets+1, dtype=int)
+    for idx, (first, second) in enumerate(zip(boundaries, boundaries[1:])):
+        choice = np.random.randint(first, second-stack_depth)
+        for i in range(stack_depth):
+            data = np.load(files[choice+i]).astype(np.float32)
+            data = resize(data, (224, 224))
+            if clip:
+                data = ((data + clip)/(2*clip))*255.0
+            data = data - np.mean(data, axis=(0, 1))
+            blob[idx, ..., 2*i:2*(i+1)] = data
+    return blob
+
+
+def flow_snippets_generator(csv_file, num_snippets):
+    def process():
+        df = pd.read_csv(csv_file)
+        while True:
+            sample_df = df.sample(1)
+            row = sample_df.iloc[0, :]
+            better_flow_snippets = get_flow_snippets(row['Better'], num_snippets)
+            worse_flow_snippets = get_flow_snippets(row['Worse'], num_snippets)
+            labels = row['label']
+            yield (better_flow_snippets, worse_flow_snippets), labels
+    return process
 
 
 def get_temporal_dataset(csv_file, batch_size, num_snippets):
-    return dataset_generator(csv_file, batch_size, num_snippets, get_flow_snippets)
+    gen = flow_snippets_generator(csv_file, num_snippets)
+    dataset = tf.data.Dataset.from_generator(
+        gen, output_types=((tf.float32, tf.float32), tf.int32))
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(2)
+    return dataset

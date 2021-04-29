@@ -8,72 +8,62 @@ from glob import glob
 from skimage.transform import resize
 from tensorflow.keras.models import load_model, Model
 
+from data_generator import get_spatial_dataset
+from model_utils import create_model
 
-def get_snippets(seq_dir, num_snippets=7, rgb_pattern="rgb_*", flow_pattern="flow_*",
-                 stack_depth=5, clip=None):
-    rgb_files = sorted(list(glob(os.path.join(seq_dir, rgb_pattern))))
-    flow_files = sorted(list(glob(os.path.join(seq_dir, flow_pattern))))
-
-    num_files = len(flow_files)
-    rgb_blob = []
-    flow_blob = []
-    boundaries = np.linspace(0, num_files//2, num_snippets+1, dtype=int)
-    for first, second in zip(boundaries, boundaries[1:]):
-        choice = np.random.randint(first, second-stack_depth)
-        flow_stack = []
-        for i in range(stack_depth):
-            flow_data = np.load(flow_files[choice+i]).astype(np.float32)
-            flow_data = resize(flow_data, (224, 224))
-            if clip:
-                flow_data = ((flow_data + clip)/(2*clip))*255.0
-            flow_data = flow_data - np.mean(flow_data, axis=(0, 1))
-            flow_stack.append(flow_data)
-        rgb_data = np.load(rgb_files[choice+i+1]).astype(np.float32)
-        rgb_data = resize(rgb_data, (224, 224))
-        rgb_blob.append(rgb_data - np.mean(rgb_data, axis=(0, 1)))
-        flow_blob.append(np.concatenate(np.asarray(flow_stack), axis=2))
-    return rgb_blob, flow_blob
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("-tm", "--temporal-model", required=True)
+    # parser.add_argument("-tm", "--temporal-model", required=True)
     parser.add_argument("-sm", "--spatial-model", required=True)
     parser.add_argument('-i', "--input-file", default='test.csv')
     parser.add_argument('-b', "--batch-size", default=64, type=int)
     parser.add_argument('-s', "--snippets", default=7, type=int)
     parser.add_argument('-a', "--alpha", default=0.5, type=float)
     args = parser.parse_args()
-    temporal_model = load_model(args.temporal_model)
-    spatial_model = load_model(args.spatial_model)
-    df = pd.read_csv(args.input_file)
-    df = df[df['label'] == 1]
-    temporal_model = temporal_model.get_layer(name='model')
-    temporal_model = Model(inputs=temporal_model.inputs, outputs=temporal_model.outputs)
 
-    spatial_model = spatial_model.get_layer(name='model')
-    spatial_model = Model(inputs=spatial_model.inputs, outputs=spatial_model.outputs)
+    print("[INFO] Preparing Spatial Model: {}".format(args.spatial_model))
+    s_model = create_model(num_snippets=args.snippets, num_input_channels=3)
+    s_model.load_weights(args.spatial_model)
+    time_distributed = s_model.get_layer(name='time_distributed')
+    o1 = time_distributed(s_model.inputs[0])
+    o2 = time_distributed(s_model.inputs[1])
+    spatial_model = Model(inputs=s_model.inputs, outputs=[o1, o2])
+    spatial_model.summary()
+
+    # print("[INFO] Preparing Temporal Model: {}".format(args.temporal_model))
+    # t_model = create_model(num_snippets=args.snippets, num_input_channels=10)
+    # t_model.load_weights(args.temporal_model)
+    # time_distributed = t_model.get_layer(name='time_distributed')
+    # o1 = time_distributed(t_model.inputs[0])
+    # o2 = time_distributed(t_model.inputs[1])
+    # temporal_model = Model(inputs=t_model.inputs, outputs=[o1, o2])
+    # temporal_model.summary()
+
+    print("[INFO] Preparing the dataset..")
+    test_dataset = get_spatial_dataset(args.input_file, args.batch_size, args.snippets)
+
     positive = negative = 0
-    for index, row in df.iterrows():
-        better_rgb_blob, better_flow_blob = get_snippets(row['Better'], num_snippets=args.snippets)
-        worse_rgb_blob, worse_flow_blob = get_snippets(row['Worse'], num_snippets=args.snippets)
+    test_iterator = iter(test_dataset)
 
-        for s_input, t_input in zip(better_rgb_blob, better_flow_blob):
-            s_output = spatial_model(np.expand_dims(s_input, 0))
-            t_output = temporal_model(np.expand_dims(t_input, 0))
-            better_score = args.alpha * s_output + (1-args.alpha) * t_output
+    num_batches = 742//args.batch_size
+    for i in range(num_batches):
+        print("[INFO] {}/{}: Running with batch_size: {}"
+              .format(i, num_batches, args.batch_size))    
+        X, y = test_iterator.get_next()
+        better_scores, worse_scores = spatial_model(X)
+        for b_snippets_scores, w_snippets_scores in zip(better_scores, worse_scores):
+            b_score = np.sum(b_snippets_scores)
+            w_score = np.sum(w_snippets_scores)
+            if b_score > w_score:
+                positive += 1
+            else:
+                negative += 1
+            print("Better score: {} | Worse score: {} | verdict: {}".format(
+                  b_score, w_score, b_score > w_score))
+        print("Accurarcy: {}".format(positive/(positive+negative)))
 
-        for s_input, t_input in zip(worse_rgb_blob, worse_flow_blob):
-            s_output = spatial_model(np.expand_dims(s_input, 0))
-            t_output = temporal_model(np.expand_dims(t_input, 0))
-            worse_score = args.alpha * s_output + (1-args.alpha) * t_output
-        if better_score > worse_score:
-            positive += 1
-        else:
-            negative += 1
-        print("Better score: {} | Worse score: {} | verdict: {}".format(
-              better_score, worse_score, better_score > worse_score))
-    print("Accurarcy: {}".format(positive/(positive+negative)))
 '''
-python evaluate.py -sm spatial_models/spatial_model_iter_100 -tm temporal_models/temporal_model_iter_001
+python evaluate.py -b 742 -sm spatial_models_timedistributed/spatial_model_iter_190.h5 -tm temporal_models/temporal_model_iter_001
 '''

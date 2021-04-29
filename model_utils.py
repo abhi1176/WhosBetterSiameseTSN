@@ -1,41 +1,41 @@
 
 import tensorflow as tf
 
-from tensorflow.keras.layers import Concatenate, Input, Lambda, Subtract
-from tensorflow.keras.models import Model, load_model
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Input, TimeDistributed
+from tensorflow.keras.models import Model
 from tensorflow.keras.utils import plot_model
 
 from alexnet_func_cpu import tsn_alexnet
-# from p2k.alexnet_pytorch_to_keras import create_keras_alexnet
-from custom_loss import get_custom_loss
+# from alexnet_func_gpu import tsn_alexnet
 
-# base_model_file = 'p2k/keras_alexnet_imagenet'
-# base_model_file = 'keras_alexnet_imagenet'
+
+MARGIN = 1
+BETA = 0.5
+
+@tf.autograph.experimental.do_not_convert
+def get_custom_loss(outputs, y):
+    y = tf.cast(y, tf.float32)  # y = [1 for distinguishable_pair, 0 if similar_pair]
+    ranking_loss = K.mean(y * K.maximum(0.0, MARGIN - outputs[0] + outputs[1]))
+    similarity_loss = K.mean((1.0-y) * K.maximum(0.0, K.abs(outputs[0] - outputs[1]) - MARGIN))
+    return (tf.math.multiply(BETA, ranking_loss) +
+                tf.math.multiply((1-BETA), similarity_loss))
+
 
 def create_model(num_snippets, num_input_channels, plot_model_as=None):
-    better_inputs = []
-    worse_inputs = []
-    outputs = []
-
-    # base_model = load_model(base_model_file)
-    # base_model = create_keras_alexnet()
     base_model = tsn_alexnet(input_shape=(224, 224, num_input_channels))
     base_model.summary()
-    for i in range(num_snippets):
-        # Better Branch
-        better_input_layer = Input(shape=(224, 224, num_input_channels))
-        better_skill = base_model(better_input_layer)
-        better_inputs.append(better_input_layer)
-        outputs.append(better_skill)
 
-        # Worse Branch
-        worse_input_layer = Input(shape=(224, 224, num_input_channels))
-        worse_skill = base_model(worse_input_layer)
-        worse_inputs.append(worse_input_layer)
-        outputs.append(worse_skill)
+    time_distributed = TimeDistributed(base_model)
 
-    inputs = better_inputs + worse_inputs
-    model = Model(inputs=inputs, outputs=outputs)
+    better_inputs = Input(shape=(num_snippets, 224, 224, num_input_channels))
+    better_outputs = time_distributed(better_inputs)
+
+    worse_inputs = Input(shape=(num_snippets, 224, 224, num_input_channels))
+    worse_outputs = time_distributed(worse_inputs)
+
+    model = Model(inputs=[better_inputs, worse_inputs], outputs=[better_outputs, worse_outputs])
+    model.summary()
     try:
         if plot_model_as:
             plot_model(model, to_file=plot_model_as, show_shapes=True,
@@ -44,3 +44,10 @@ def create_model(num_snippets, num_input_channels, plot_model_as=None):
         print("[EXCEPTION] Unable to plot model..")
         print(e)
     return model
+
+
+if __name__ == "__main__":
+    spatial_model = create_model(num_snippets=7, num_input_channels=3,
+                                 plot_model_as="spatial_model.png")
+    temporal_model = create_model(num_snippets=7, num_input_channels=10,
+                                 plot_model_as="temporal_model.png")
