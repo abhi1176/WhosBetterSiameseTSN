@@ -16,12 +16,12 @@ from model_utils import create_model, get_custom_loss
 logging.basicConfig(filename='log_train_spatial.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-NUM_SNIPPETS = 7
+NUM_SNIPPETS = 21
 NUM_ITERATIONS = 3500
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 MOMENTUM = 0.9  # SGD
 LEARNING_RATE = 1e-3
-VALIDATION_BATCH_SIZE = 32
+VALIDATION_BATCH_SIZE = 1
 
 optimizer = SGD(lr=LEARNING_RATE, momentum=MOMENTUM)
 
@@ -54,17 +54,19 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch-size", type=int, default=BATCH_SIZE)
     parser.add_argument("-vb", "--validation-batch-size", type=int, default=VALIDATION_BATCH_SIZE)
     parser.add_argument("-i", "--iterations", type=int, default=NUM_ITERATIONS)
+    parser.add_argument("--split", type=int, required=True)
     args = parser.parse_args()
 
-    model = create_model(num_snippets=args.snippets, num_input_channels=3,
-                         plot_model_as='spatial_model.png')
-    train_dataset = get_spatial_dataset("train.csv", args.batch_size, args.snippets)
-    val_dataset = get_spatial_dataset("val.csv", args.validation_batch_size, args.snippets)
+    model = create_model(num_snippets=args.snippets, num_input_channels=3)
+    train_file = os.path.join("split_{}/train.csv".format(args.split))
+    val_file = os.path.join("split_{}/val.csv".format(args.split))
+    train_dataset = get_spatial_dataset(train_file, args.batch_size, args.snippets)
+    val_dataset = get_spatial_dataset(val_file, args.validation_batch_size, args.snippets)
 
     train_iterator = iter(train_dataset)
     val_iterator = iter(val_dataset)
 
-    models_dir = "spatial_models_{}".format(args.snippets)
+    models_dir = "models/split_{}/spatial_models_{}".format(args.split, args.snippets)
     os.makedirs(models_dir, exist_ok=True)
 
     start_time = time()
@@ -80,8 +82,8 @@ if __name__ == "__main__":
               .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
         if iteration % 10 == 0:
             val_loss = validate_batch(model, val_iterator)
-            save_path = os.path.join(models_dir, "spatial_model_iter_{:04d}".format(iteration))
-            model.save_weights(save_path+".h5")
+            save_path = os.path.join(models_dir, "spatial_model_iter_{:04d}.h5".format(iteration))
+            model.save_weights(save_path)
         start_time = time()
 
     val_loss = validate_batch(model, val_iterator)

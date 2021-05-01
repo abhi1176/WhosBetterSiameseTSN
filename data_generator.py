@@ -1,5 +1,4 @@
 
-import logging
 import numpy as np
 import os
 import pandas as pd
@@ -8,9 +7,6 @@ import tensorflow as tf
 from functools import partial
 from glob import glob
 from skimage.transform import resize
-
-logging.basicConfig(filename='log_data_generator.log', level=logging.INFO)
-data_logger = logging.getLogger(__name__)
 
 IMAGENET_MEAN = np.array([123.68, 116.779, 103.939])
 
@@ -25,7 +21,7 @@ def get_rgb_snippets(seq_dir, num_snippets):
         try:
             choice = np.random.randint(first, second)
         except:
-            data_logger.info("[ERROR] first:{}, second:{}, boundaries: {} for seq_dir: {}"
+            print("[ERROR] first:{}, second:{}, boundaries: {} for seq_dir: {}"
                   .format(first, second, boundaries, seq_dir))
         data = np.load(files[choice]).astype(np.float32)
         data = resize(data, (224, 224))
@@ -34,7 +30,7 @@ def get_rgb_snippets(seq_dir, num_snippets):
     return blob
 
 
-def rgb_snippets_generator(csv_file, num_snippets, shuffle=True):
+def rgb_snippets_generator(csv_file, num_snippets, shuffle=False):
     def process():
         df = pd.read_csv(csv_file)
         n = df.shape[0]
@@ -46,6 +42,8 @@ def rgb_snippets_generator(csv_file, num_snippets, shuffle=True):
             else:
                 row = sample_df.iloc[i, :]
                 i = (i+1)%n
+                if i == 0:  # Shuffle if all of the dataframe is consumed
+                    df = df.sample(frac=1)
             better_rgb_snippets = get_rgb_snippets(row['Better'], num_snippets)
             worse_rgb_snippets = get_rgb_snippets(row['Worse'], num_snippets)
             labels = row['label']
@@ -74,7 +72,7 @@ def get_flow_snippets(seq_dir, num_snippets, stack_depth=5, clip=15):
             try:
                 data = np.load(files[choice+i]).astype(np.float32)
             except Exception as e:
-                data_logger.info("[ERROR] Unable to load {}...".format(files[choice+i]))
+                print("[ERROR] Unable to load {}...".format(files[choice+i]))
                 raise e
             data = resize(data, (224, 224))
             if clip:
@@ -84,7 +82,7 @@ def get_flow_snippets(seq_dir, num_snippets, stack_depth=5, clip=15):
     return blob
 
 
-def flow_snippets_generator(csv_file, num_snippets, shuffle=True):
+def flow_snippets_generator(csv_file, num_snippets, shuffle=False):
     def process():
         df = pd.read_csv(csv_file)
         n = df.shape[0]
@@ -96,6 +94,8 @@ def flow_snippets_generator(csv_file, num_snippets, shuffle=True):
             else:
                 row = sample_df.iloc[i, :]
                 i = (i+1)%n
+                if i == 0:  # Shuffle if all of the dataframe is consumed
+                    df = df.sample(frac=1)
             better_flow_snippets = get_flow_snippets(row['Better'], num_snippets)
             worse_flow_snippets = get_flow_snippets(row['Worse'], num_snippets)
             labels = row['label']

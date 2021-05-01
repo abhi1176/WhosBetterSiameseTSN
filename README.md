@@ -16,7 +16,6 @@ cd ../../
 mv EPIC-Skills2018_videos/videos/* .
 rm -rf EPIC-Skills2018_videos
 
-
 # [DoughRolling]
 mkdir DoughRolling_zip DoughRolling
 # Download all video.zip files in http://kitchen.cs.cmu.edu/main.php?recipefilter=Pizza#table to DoughRolling_zip
@@ -44,6 +43,11 @@ unzip ${file}.zip && \
         rm -r !("video") && \  # Remove all files and folders except `video` directory. Do not run this as a sudo user.
         mv video/*_capture2.avi . && rm -rf video && cd ../  # Move all video files from video directory
 done
+
+mv EPIC-Skills2018/annotations/Chopstick_Using EPIC-Skills2018/annotations/ChopstickUsing
+mv EPIC-Skills2018/annotations/Hand_Drawing EPIC-Skills2018/annotations/HandDrawing
+mv EPIC-Skills2018/annotations/Dough_Rolling EPIC-Skills2018/annotations/DoughRolling
+mv EPIC-Skills2018/annotations/Sonic_Drawing EPIC-Skills2018/annotations/SonicDrawing
 ```
 
 

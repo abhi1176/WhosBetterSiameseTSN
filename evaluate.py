@@ -17,12 +17,13 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-tm", "--temporal-model", required=True)
     parser.add_argument("-sm", "--spatial-model", required=True)
-    parser.add_argument('-i', "--input-file", default='test.csv')
     parser.add_argument('-b', "--batch-size", default=64, type=int)
     parser.add_argument('-s', "--snippets", default=7, type=int)
     parser.add_argument('-a', "--alpha", default=0.4, type=float)
+    parser.add_argument("--split", default=1, type=int)
     args = parser.parse_args()
 
+    input_file = os.path.join("split_{}".format(args.split), "val.csv")
     print("[INFO] Preparing Spatial Model: {}".format(args.spatial_model))
     s_model = create_model(num_snippets=args.snippets, num_input_channels=3)
     s_model.load_weights(args.spatial_model)
@@ -42,8 +43,8 @@ if __name__ == "__main__":
     # temporal_model.summary()
 
     print("[INFO] Preparing the dataset..")
-    spatial_dataset = get_spatial_dataset(args.input_file, args.batch_size, args.snippets, shuffle=False)
-    temporal_dataset = get_temporal_dataset(args.input_file, args.batch_size, args.snippets, shuffle=False)
+    spatial_dataset = get_spatial_dataset(input_file, args.batch_size, args.snippets, shuffle=False)
+    temporal_dataset = get_temporal_dataset(input_file, args.batch_size, args.snippets, shuffle=False)
 
     positive = negative = 0
     positive_spatial = 0
