@@ -1,4 +1,5 @@
 
+import numpy as np
 import tensorflow as tf
 
 from tensorflow.keras import backend as K
@@ -20,6 +21,16 @@ def get_custom_loss(outputs, y):
     similarity_loss = K.mean((1.0-y) * K.maximum(0.0, K.abs(outputs[0] - outputs[1]) - MARGIN))
     return (tf.math.multiply(BETA, ranking_loss) +
                 tf.math.multiply((1-BETA), similarity_loss))
+
+
+def get_accuracy(scores):
+    positive = 0
+    for b_snippets_scores, w_snippets_scores in zip(scores[0], scores[1]):
+        b_score = np.sum(b_snippets_scores)
+        w_score = np.sum(w_snippets_scores)
+        if b_score > w_score:
+            positive += 1
+    return positive/len(scores[0])
 
 
 def create_model(num_snippets, num_input_channels, plot_model_as=None):

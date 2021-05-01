@@ -30,20 +30,18 @@ def get_rgb_snippets(seq_dir, num_snippets):
     return blob
 
 
-def rgb_snippets_generator(csv_file, num_snippets, shuffle=False):
+def rgb_snippets_generator(csv_file, num_snippets, validation=False):
     def process():
         df = pd.read_csv(csv_file)
         n = df.shape[0]
         i = 0
         while True:
-            if shuffle:
-                sample_df = df.sample(1)
-                row = sample_df.iloc[0, :]
-            else:
-                row = sample_df.iloc[i, :]
-                i = (i+1)%n
-                if i == 0:  # Shuffle if all of the dataframe is consumed
-                    df = df.sample(frac=1)
+            row = df.iloc[i, :]
+            i = (i+1)%n
+            if i == 0:  # Shuffle if all of the dataframe is consumed
+                df = df.sample(frac=1)
+                if validation:
+                    break
             better_rgb_snippets = get_rgb_snippets(row['Better'], num_snippets)
             worse_rgb_snippets = get_rgb_snippets(row['Worse'], num_snippets)
             labels = row['label']
@@ -51,8 +49,8 @@ def rgb_snippets_generator(csv_file, num_snippets, shuffle=False):
     return process
 
 
-def get_spatial_dataset(csv_file, batch_size, num_snippets, shuffle=True):
-    gen = rgb_snippets_generator(csv_file, num_snippets, shuffle=True)
+def get_spatial_dataset(csv_file, batch_size, num_snippets, validation=False):
+    gen = rgb_snippets_generator(csv_file, num_snippets, validation)
     dataset = tf.data.Dataset.from_generator(
         gen, output_types=((tf.float32, tf.float32), tf.int32))
     dataset = dataset.batch(batch_size)
@@ -82,20 +80,18 @@ def get_flow_snippets(seq_dir, num_snippets, stack_depth=5, clip=15):
     return blob
 
 
-def flow_snippets_generator(csv_file, num_snippets, shuffle=False):
+def flow_snippets_generator(csv_file, num_snippets, validation=False):
     def process():
         df = pd.read_csv(csv_file)
         n = df.shape[0]
         i = 0
         while True:
-            if shuffle:
-                sample_df = df.sample(1)
-                row = sample_df.iloc[0, :]
-            else:
-                row = sample_df.iloc[i, :]
-                i = (i+1)%n
-                if i == 0:  # Shuffle if all of the dataframe is consumed
-                    df = df.sample(frac=1)
+            row = df.iloc[i, :]
+            i = (i+1)%n
+            if i == 0:  # Shuffle if all of the dataframe is consumed
+                if validation:
+                    break
+                df = df.sample(frac=1)
             better_flow_snippets = get_flow_snippets(row['Better'], num_snippets)
             worse_flow_snippets = get_flow_snippets(row['Worse'], num_snippets)
             labels = row['label']
@@ -103,8 +99,8 @@ def flow_snippets_generator(csv_file, num_snippets, shuffle=False):
     return process
 
 
-def get_temporal_dataset(csv_file, batch_size, num_snippets, shuffle=True):
-    gen = flow_snippets_generator(csv_file, num_snippets, shuffle=True)
+def get_temporal_dataset(csv_file, batch_size, num_snippets, validation=False):
+    gen = flow_snippets_generator(csv_file, num_snippets, validation)
     dataset = tf.data.Dataset.from_generator(
         gen, output_types=((tf.float32, tf.float32), tf.int32))
     dataset = dataset.batch(batch_size)

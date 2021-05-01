@@ -96,11 +96,3 @@ if __name__ == "__main__":
     print("Spatial Accuracy: {:.3f}".format(positive_spatial/(positive_spatial+negative_spatial)))
     print("Temporal Accuracy: {:.3f}".format(positive_temporal/(positive_temporal+negative_temporal)))
 
-'''
-python evaluate.py -b 742 -sm spatial_models_7/spatial_model_iter_190.h5 -tm temporal_models/temporal_model_iter_001
-python evaluate.py \
-    -s 21
-    -i val_ChopstickUsing.csv \
-    -sm spatial_models_7/spatial_model_iter_0570.h5 \
-    -tm temporal_models_1/temporal_model_iter_610.h5
-'''
