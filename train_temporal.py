@@ -11,7 +11,7 @@ from tensorflow.keras.optimizers import SGD, Adam
 from time import time
 
 from data_generator import get_temporal_dataset
-from model_utils import create_model, get_custom_loss
+from model_utils import create_model, get_custom_loss, get_accuracy
 
 
 logging.basicConfig(filename='log_train_temporal.log', level=logging.INFO)
@@ -81,7 +81,7 @@ if __name__ == "__main__":
               .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
         print("Train step: {}/{} | loss: {:.3f} | train_step: {:.3f} s | loop: {:.3f} s"
               .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
-	if iteration % 10 == 0:
+        if iteration % 10 == 0:
             val_acc = []
             for val_batch in val_dataset:
                 val_acc.append(validate_batch(model, val_batch))
