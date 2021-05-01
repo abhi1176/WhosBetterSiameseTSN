@@ -118,7 +118,7 @@ def tsn_alexnet(input_shape, weights_file="bvlc_alexnet.npy"):
     net_data['conv5_b'] = [net_data['conv5'][0][..., 128:], net_data['conv5'][1][..., 128:]]
 
     for layer_name in layers:
-        print("[INFO] Setting weights for layer: {}".format(layer_name))
+        # print("[INFO] Setting weights for layer: {}".format(layer_name))
         layer = model.get_layer(layer_name)
         layer.set_weights(net_data[layer_name])
 

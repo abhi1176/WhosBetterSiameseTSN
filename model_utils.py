@@ -24,7 +24,7 @@ def get_custom_loss(outputs, y):
 
 def create_model(num_snippets, num_input_channels, plot_model_as=None):
     base_model = tsn_alexnet(input_shape=(224, 224, num_input_channels))
-    base_model.summary()
+    # base_model.summary()
 
     time_distributed = TimeDistributed(base_model)
 
@@ -35,7 +35,7 @@ def create_model(num_snippets, num_input_channels, plot_model_as=None):
     worse_outputs = time_distributed(worse_inputs)
 
     model = Model(inputs=[better_inputs, worse_inputs], outputs=[better_outputs, worse_outputs])
-    model.summary()
+    # model.summary()
     try:
         if plot_model_as:
             plot_model(model, to_file=plot_model_as, show_shapes=True,
