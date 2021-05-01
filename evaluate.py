@@ -8,14 +8,14 @@ from glob import glob
 from skimage.transform import resize
 from tensorflow.keras.models import load_model, Model
 
-from data_generator import get_spatial_dataset
+from data_generator import get_spatial_dataset, get_temporal_dataset
 from model_utils import create_model
 
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    # parser.add_argument("-tm", "--temporal-model", required=True)
+    parser.add_argument("-tm", "--temporal-model", required=True)
     parser.add_argument("-sm", "--spatial-model", required=True)
     parser.add_argument('-i', "--input-file", default='test.csv')
     parser.add_argument('-b', "--batch-size", default=64, type=int)
@@ -32,30 +32,36 @@ if __name__ == "__main__":
     spatial_model = Model(inputs=s_model.inputs, outputs=[o1, o2])
     spatial_model.summary()
 
-    # print("[INFO] Preparing Temporal Model: {}".format(args.temporal_model))
-    # t_model = create_model(num_snippets=args.snippets, num_input_channels=10)
-    # t_model.load_weights(args.temporal_model)
-    # time_distributed = t_model.get_layer(name='time_distributed')
-    # o1 = time_distributed(t_model.inputs[0])
-    # o2 = time_distributed(t_model.inputs[1])
-    # temporal_model = Model(inputs=t_model.inputs, outputs=[o1, o2])
-    # temporal_model.summary()
+    print("[INFO] Preparing Temporal Model: {}".format(args.temporal_model))
+    t_model = create_model(num_snippets=args.snippets, num_input_channels=10)
+    t_model.load_weights(args.temporal_model)
+    time_distributed = t_model.get_layer(name='time_distributed_1')
+    o1 = time_distributed(t_model.inputs[0])
+    o2 = time_distributed(t_model.inputs[1])
+    temporal_model = Model(inputs=t_model.inputs, outputs=[o1, o2])
+    temporal_model.summary()
 
     print("[INFO] Preparing the dataset..")
-    test_dataset = get_spatial_dataset(args.input_file, args.batch_size, args.snippets)
+    spatial_dataset = get_spatial_dataset(args.input_file, args.batch_size, args.snippets, shuffle=False)
+    temporal_dataset = get_temporal_dataset(args.input_file, args.batch_size, args.snippets, shuffle=False)
 
     positive = negative = 0
-    test_iterator = iter(test_dataset)
-
-    num_batches = 742//args.batch_size
+    spatial_iterator = iter(spatial_dataset)
+    temporal_iterator = iter(temporal_dataset)
+    df = pd.read_csv(args.input_file)
+    num_records = df.shape[0]
+    num_batches = num_records//args.batch_size
     for i in range(num_batches):
         print("[INFO] {}/{}: Running with batch_size: {}"
               .format(i, num_batches, args.batch_size))    
-        X, y = test_iterator.get_next()
-        better_scores, worse_scores = spatial_model(X)
-        for b_snippets_scores, w_snippets_scores in zip(better_scores, worse_scores):
-            b_score = np.sum(b_snippets_scores)
-            w_score = np.sum(w_snippets_scores)
+        spatial_X, y = spatial_iterator.get_next()
+        temporal_X, y = temporal_iterator.get_next()
+        better_scores, worse_scores = spatial_model(spatial_X)
+        better_t_scores, worse_t_scores = temporal_model(temporal_X)
+        for b_snippets_scores, w_snippets_scores, b_t_snippets_scores, w_t_snippets_scores in \
+                zip(better_scores, worse_scores, better_t_scores, worse_t_scores):
+            b_score = args.alpha*np.sum(b_snippets_scores) + (1-args.alpha)*np.sum(b_t_snippets_scores)
+            w_score = args.alpha*np.sum(w_snippets_scores) + (1-args.alpha)*np.sum(w_t_snippets_scores)
             if b_score > w_score:
                 positive += 1
             else:
@@ -66,4 +72,5 @@ if __name__ == "__main__":
 
 '''
 python evaluate.py -b 742 -sm spatial_models_timedistributed/spatial_model_iter_190.h5 -tm temporal_models/temporal_model_iter_001
+python evaluate.py -sm spatial_models_7/spatial_model_iter_0570.h5 -tm temporal_models_1/temporal_model_iter_610.h5: 0.9289772727272727
 '''

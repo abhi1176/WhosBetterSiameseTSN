@@ -64,7 +64,7 @@ if __name__ == "__main__":
     train_iterator = iter(train_dataset)
     val_iterator = iter(val_dataset)
 
-    models_dir = "temporal_models"
+    models_dir = "temporal_models_{}".format(args.snippets)
     os.makedirs(models_dir, exist_ok=True)
 
     start_time = time()
@@ -81,7 +81,6 @@ if __name__ == "__main__":
         if iteration % 10 == 0:
             val_loss = validate_batch(model, val_iterator)
             save_path = os.path.join(models_dir, "temporal_model_iter_{:03d}".format(iteration))
-            # model.save(save_path)
             model.save_weights(save_path+".h5")
         start_time = time()
 
