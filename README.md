@@ -6,7 +6,7 @@ mkdir dataset && cd dataset
 
 # [ChopstickUsing, HandDrawing and SonicDrawing]
 # Download https://drive.google.com/file/d/1Ck-Dke5AcKMzKsedJfblRcTjSPBklo4P/view to `dataset`
-unzip EPIC-Skills2018_videos.zip  # This didn't work on Linux, but did on Windows. Don't know why
+unzip EPIC-Skills2018_videos.zip  # This didn't work on Linux, but did on Windows.
 cd EPIC-Skills2018_videos/videos
 for dir in `ls`
 do
@@ -97,7 +97,6 @@ wget http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/bvlc_alexnet.npy
 ```sh
 python train_spatial.py
 ```
-
 
 # Train Temporal Model
 

@@ -10,8 +10,7 @@ from glob import glob
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        "-a", "--annotations-dir", default="EPIC-Skills2018/annotations",
-        help="Directory containing sequence/splits/<train/val>.csv")
+        "-a", "--annotations-dir", default="EPIC-Skills2018/annotations")
     parser.add_argument('-d', '--dataset', default='frames')
     args = parser.parse_args()
 
@@ -24,12 +23,12 @@ if __name__ == "__main__":
     all_val_df = pd.DataFrame()
     for sequence in os.listdir(args.annotations_dir):
         print("[INFO] Processing {}...".format(sequence))
-        
+
         similar_pairs_csv = os.path.join(args.annotations_dir, sequence, "similar_pairs.csv")
         if not os.path.exists(similar_pairs_csv):
             print("[Skipping] as {} does not exist..".format(similar_pairs_csv))
             continue
-        
+
         sequence_dir = os.path.join(args.annotations_dir, sequence, "splits")
         train_csvs = glob(os.path.join(sequence_dir, "*_train_*"))
         val_csvs = glob(os.path.join(sequence_dir, "*_val_*"))
@@ -49,16 +48,7 @@ if __name__ == "__main__":
         similar_df = similar_df.applymap(lambda x: os.path.join(
             args.dataset, dirname_by_seq.get(sequence, sequence), x))
         similar_df['label'] = pd.Series([0] * similar_df.shape[0])
-        # print(train_df.shape, similar_df.shape)
         all_train_df = all_train_df.append(similar_df)
-
-        # for val_csv in val_csvs:
-        #     df = pd.read_csv(val_csv, usecols=columns)
-        #     val_df = val_df.append(df)
-        # val_df = val_df.applymap(lambda x: os.path.join(
-        #     args.dataset, dirname_by_seq.get(sequence, sequence), x))
-        # all_val_df = all_val_df.append(val_df)
-        # all_val_df['label'] = pd.Series([1] * all_val_df.shape[0])
 
     all_train_df.reset_index(inplace=True)
     all_train_df.drop_duplicates(inplace=True)

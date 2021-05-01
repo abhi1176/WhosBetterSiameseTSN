@@ -1,9 +1,6 @@
 
 import os
 
-def rename_suturing(name):
-	os.rename(name, )
-
 frames = "frames"
 
 for dir_ in os.listdir(frames):
