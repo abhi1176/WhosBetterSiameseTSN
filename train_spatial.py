@@ -82,10 +82,10 @@ if __name__ == "__main__":
         print("Train step: {}/{} | loss: {:.3f} | train_step: {:.3f} s | loop: {:.3f} s"
               .format(iteration, args.iterations, loss, time()-train_start, time()-start_time))
         if iteration % 10 == 0:
-            val_acc = []
-            for val_batch in val_dataset:
-                val_acc.append(validate_batch(model, val_batch))
-            print("[INFO] Average val_accuracy: {}".format(np.mean(val_acc)))
+            # val_acc = []
+            # for val_batch in val_dataset:
+            #     val_acc.append(validate_batch(model, val_batch))
+            # print("[INFO] Average val_accuracy: {}".format(np.mean(val_acc)))
             save_path = os.path.join(models_dir, "spatial_model_iter_{:04d}.h5".format(iteration))
             model.save_weights(save_path)
         start_time = time()

@@ -1,4 +1,5 @@
 
+import math
 import numpy as np
 import os
 import pandas as pd
@@ -15,15 +16,14 @@ from model_utils import create_model
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+    parser.add_argument('-i', "--input-csv", required=True)
     parser.add_argument("-tm", "--temporal-model", required=True)
     parser.add_argument("-sm", "--spatial-model", required=True)
-    parser.add_argument('-b', "--batch-size", default=64, type=int)
-    parser.add_argument('-s', "--snippets", default=7, type=int)
+    parser.add_argument('-b', "--batch-size", default=32, type=int)
+    parser.add_argument('-s', "--snippets", default=25, type=int)
     parser.add_argument('-a', "--alpha", default=0.4, type=float)
-    parser.add_argument("--split", default=1, type=int)
     args = parser.parse_args()
 
-    input_file = os.path.join("split_{}".format(args.split), "val.csv")
     print("[INFO] Preparing Spatial Model: {}".format(args.spatial_model))
     s_model = create_model(num_snippets=args.snippets, num_input_channels=3)
     s_model.load_weights(args.spatial_model)
@@ -43,8 +43,8 @@ if __name__ == "__main__":
     # temporal_model.summary()
 
     print("[INFO] Preparing the dataset..")
-    spatial_dataset = get_spatial_dataset(input_file, args.batch_size, args.snippets, shuffle=False)
-    temporal_dataset = get_temporal_dataset(input_file, args.batch_size, args.snippets, shuffle=False)
+    spatial_dataset = get_spatial_dataset(args.input_csv, args.batch_size, args.snippets, validation=True)
+    temporal_dataset = get_temporal_dataset(args.input_csv, args.batch_size, args.snippets, validation=True)
 
     positive = negative = 0
     positive_spatial = 0
@@ -54,12 +54,12 @@ if __name__ == "__main__":
 
     spatial_iterator = iter(spatial_dataset)
     temporal_iterator = iter(temporal_dataset)
-    df = pd.read_csv(args.input_file)
+    df = pd.read_csv(args.input_csv)
     num_records = df.shape[0]
-    num_batches = num_records//args.batch_size
+    num_batches = math.ceil(num_records/args.batch_size)
     for i in range(num_batches):
         print("[INFO] {}/{}: Running with batch_size: {}"
-              .format(i, num_batches, args.batch_size))
+              .format(i+1, num_batches, args.batch_size))
         spatial_X, y = spatial_iterator.get_next()
         temporal_X, y = temporal_iterator.get_next()
         better_scores, worse_scores = spatial_model(spatial_X)
@@ -90,6 +90,7 @@ if __name__ == "__main__":
                 negative_temporal += 1
             # print("Better score: {} | Worse score: {} | verdict: {}".format(
             #       b_score, w_score, b_score > w_score))
+    print("Input file: {}".format(args.input_csv))
     print("alpha: {}".format(args.alpha))
     print("Snippets: {}".format(args.snippets))
     print("Accurarcy: {:.3f}".format(positive/(positive+negative)))

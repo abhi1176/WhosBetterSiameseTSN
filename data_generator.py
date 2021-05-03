@@ -39,9 +39,9 @@ def rgb_snippets_generator(csv_file, num_snippets, validation=False):
             row = df.iloc[i, :]
             i = (i+1)%n
             if i == 0:  # Shuffle if all of the dataframe is consumed
-                df = df.sample(frac=1)
                 if validation:
                     break
+                df = df.sample(frac=1)
             better_rgb_snippets = get_rgb_snippets(row['Better'], num_snippets)
             worse_rgb_snippets = get_rgb_snippets(row['Worse'], num_snippets)
             labels = row['label']
