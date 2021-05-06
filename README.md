@@ -90,109 +90,54 @@ python find_similar_pairs.py -s Knot_Tying
 python prepare_annotations.py
 ```
 
-# Get pretrained weights
+# Train the models with 4-cross-validation
+
+> You can train the model with the instructions below or alternatively download the models from [link](https://drive.google.com/drive/folders/1QJloftDDlidD9aCNs-jaW_yIwUBGIyG7?usp=sharing)
+
+## Get pretrained weights
 
 ```sh
 wget http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/bvlc_alexnet.npy
 ```
 
-# Train Spatial Model
+## Train Spatial Model
 
 ```sh
-python train_spatial.py -b 128 -s 7
-python train_spatial.py -b 64 -s 21
+python train_spatial.py --split 1
+python train_spatial.py --split 2
+python train_spatial.py --split 3
+python train_spatial.py --split 4
 ```
 
-# Train Temporal Model
+## Train Temporal Model
 
 ```sh
-python train_temporal.py -b 128 -s 1
-python train_temporal.py -b 128 -s 3
-python train_temporal.py -b 64 -s 7
+python train_temporal.py --split 1
+python train_temporal.py --split 2
+python train_temporal.py --split 3
+python train_temporal.py --split 4
 ```
 
-# Test
+# Evaluate
 
-## ChopstickUsing
 ```sh
 python evaluate.py \
-    -i val_ChopstickUsing.csv \
-    -sm spatial_models_7/spatial_model_iter_0570.h5 \
-    -tm temporal_models_1/temporal_model_iter_610.h5
-# Snippets: 7
-# Accurarcy: 0.979
-# Spatial Accuracy: 0.974
-# Temporal Accuracy: 0.864
-```
+    -sm models/split_1/spatial_model.h5 \
+    -tm models/split_1/temporal_model.h5 \
+    -i split_1/val.csv
 
-## DoughRolling
-```sh
 python evaluate.py \
-    -i val_DoughRolling.csv \
-    -sm spatial_models_7/spatial_model_iter_0570.h5 \
-    -tm temporal_models_1/temporal_model_iter_610.h5
-# Snippets: 7
-# Accurarcy: 0.891
-# Spatial Accuracy: 0.922
-# Temporal Accuracy: 0.578
-```
+    -sm models/split_2/spatial_model.h5 \
+    -tm models/split_2/temporal_model.h5 \
+    -i split_2/val.csv
 
-## HandDrawing
-```sh
-python evaluate.py -b 59\
-    -i val_HandDrawing.csv \
-    -sm spatial_models_7/spatial_model_iter_0570.h5 \
-    -tm temporal_models_1/temporal_model_iter_610.h5
-# Snippets: 7
-# Accurarcy: 0.949
-# Spatial Accuracy: 0.949
-# Temporal Accuracy: 0.746
-```
-
-## KnotTying
-```sh
 python evaluate.py \
-    -i val_KnotTying.csv \
-    -sm spatial_models_7/spatial_model_iter_0570.h5 \
-    -tm temporal_models_1/temporal_model_iter_610.h5
-# Snippets: 7
-# Accurarcy: 0.930
-# Spatial Accuracy: 0.926
-# Temporal Accuracy: 0.648
-```
+    -sm models/split_3/spatial_model.h5 \
+    -tm models/split_3/temporal_model.h5 \
+    -i split_3/val.csv
 
-## NeedlePassing
-```sh
-python evaluate.py -b 80 \
-    -i val_NeedlePassing.csv \
-    -sm spatial_models_7/spatial_model_iter_0570.h5 \
-    -tm temporal_models_1/temporal_model_iter_610.h5
-# Snippets: 7
-# Accurarcy: 0.938
-# Spatial Accuracy: 0.914
-# Temporal Accuracy: 0.727
-```
-
-## SonicDrawing
-```sh
-python evaluate.py -b 47 \
-    -i val_SonicDrawing.csv \
-    -sm spatial_models_7/spatial_model_iter_0570.h5 \
-    -tm temporal_models_1/temporal_model_iter_610.h5
-# Snippets: 7
-# Accurarcy: 0.872
-# Spatial Accuracy: 0.915
-# Temporal Accuracy: 0.638
-```
-
-## Suturing
-```sh
-python evaluate.py -b 100 \
-    -i val_Suturing.csv \
-    -sm spatial_models_7/spatial_model_iter_0570.h5 \
-    -tm temporal_models_1/temporal_model_iter_610.h5
-# Snippets: 7
-# Accurarcy: 0.880
-# Spatial Accuracy: 0.893
-# Temporal Accuracy: 0.650
+python evaluate.py \
+    -sm models/split_4/spatial_model.h5 \
+    -tm models/split_4/temporal_model.h5 \
+    -i split_4/val.csv
 ```

@@ -104,7 +104,12 @@ if __name__ == "__main__":
 
 '''
 python evaluate.py \
-    -sm models/split_2/spatial_models_21/spatial_model_iter_3500.h5 \
-    -tm models/split_2/temporal_models_21/temporal_model_iter_1000.h5 \
+    -sm models/split_1/spatial_model.h5 \
+    -tm models/split_1/temporal_model.h5 \
+    -i split_1/val.csv
+
+python evaluate.py \
+    -sm models/split_2/spatial_model.h5 \
+    -tm models/split_2/temporal_model.h5 \
     -i split_2/val.csv
 '''
