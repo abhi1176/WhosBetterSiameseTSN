@@ -13,7 +13,6 @@ from data_generator import get_spatial_dataset, get_temporal_dataset
 from model_utils import create_model
 
 
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('-i', "--input-csv", required=True)
@@ -42,58 +41,70 @@ if __name__ == "__main__":
     temporal_model = Model(inputs=t_model.inputs, outputs=[o1, o2])
     # temporal_model.summary()
 
-    print("[INFO] Preparing the dataset..")
-    spatial_dataset = get_spatial_dataset(args.input_csv, args.batch_size, args.snippets, validation=True)
-    temporal_dataset = get_temporal_dataset(args.input_csv, args.batch_size, args.snippets, validation=True)
-
-    positive = negative = 0
-    positive_spatial = 0
-    negative_spatial = 0
-    positive_temporal = 0
-    negative_temporal = 0
-
-    spatial_iterator = iter(spatial_dataset)
-    temporal_iterator = iter(temporal_dataset)
     df = pd.read_csv(args.input_csv)
-    num_records = df.shape[0]
-    num_batches = math.ceil(num_records/args.batch_size)
-    for i in range(num_batches):
-        print("[INFO] {}/{}: Running with batch_size: {}"
-              .format(i+1, num_batches, args.batch_size))
-        spatial_X, y = spatial_iterator.get_next()
-        temporal_X, y = temporal_iterator.get_next()
-        better_scores, worse_scores = spatial_model(spatial_X)
-        better_t_scores, worse_t_scores = temporal_model(temporal_X)
-        for b_s_snippets_scores, w_s_snippets_scores, b_t_snippets_scores, w_t_snippets_scores in \
-                zip(better_scores, worse_scores, better_t_scores, worse_t_scores):
-            b_s_score = np.sum(b_s_snippets_scores)
-            b_t_score = np.sum(b_t_snippets_scores)
-            b_score = args.alpha*b_s_score + (1-args.alpha)*b_t_score
+    sequences = np.unique(df['Better'].apply(lambda x: os.path.dirname(x)).values)
 
-            w_s_score = np.sum(w_s_snippets_scores)
-            w_t_score = np.sum(w_t_snippets_scores)
-            w_score = args.alpha*w_s_score + (1-args.alpha)*w_t_score
+    for sequence in sequences:
+        seq_df = df[df['Better'].str.contains(sequence)]
+        num_records = seq_df.shape[0]
+        num_batches = math.ceil(num_records/args.batch_size)
+        input_csv = os.path.join(os.path.dirname(args.input_csv),
+                                 os.path.basename(sequence)) + ".csv"
+        seq_df.to_csv(input_csv, index=False)
 
-            if b_score > w_score:
-                positive += 1
-            else:
-                negative += 1
+        print("[INFO] Preparing the dataset for {} from {}".format(sequence, input_csv))
+        spatial_dataset = get_spatial_dataset(input_csv, args.batch_size, args.snippets, validation=True)
+        temporal_dataset = get_temporal_dataset(input_csv, args.batch_size, args.snippets, validation=True)
 
-            if b_s_score > w_s_score:
-                positive_spatial += 1
-            else:
-                negative_spatial += 1
+        positive = negative = 0
+        positive_spatial = 0
+        negative_spatial = 0
+        positive_temporal = 0
+        negative_temporal = 0
 
-            if b_t_score > w_t_score:
-                positive_temporal += 1
-            else:
-                negative_temporal += 1
-            # print("Better score: {} | Worse score: {} | verdict: {}".format(
-            #       b_score, w_score, b_score > w_score))
-    print("Input file: {}".format(args.input_csv))
-    print("alpha: {}".format(args.alpha))
-    print("Snippets: {}".format(args.snippets))
-    print("Accurarcy: {:.3f}".format(positive/(positive+negative)))
-    print("Spatial Accuracy: {:.3f}".format(positive_spatial/(positive_spatial+negative_spatial)))
-    print("Temporal Accuracy: {:.3f}".format(positive_temporal/(positive_temporal+negative_temporal)))
+        spatial_iterator = iter(spatial_dataset)
+        temporal_iterator = iter(temporal_dataset)
+        for i in range(num_batches):
+            print("[INFO] {}/{}: Running with batch_size: {}"
+                  .format(i+1, num_batches, args.batch_size))
+            spatial_X, y = spatial_iterator.get_next()
+            temporal_X, y = temporal_iterator.get_next()
+            better_scores, worse_scores = spatial_model(spatial_X)
+            better_t_scores, worse_t_scores = temporal_model(temporal_X)
+            for b_s_snippets_scores, w_s_snippets_scores, b_t_snippets_scores, w_t_snippets_scores in \
+                    zip(better_scores, worse_scores, better_t_scores, worse_t_scores):
+                b_s_score = np.sum(b_s_snippets_scores)
+                b_t_score = np.sum(b_t_snippets_scores)
+                b_score = args.alpha*b_s_score + (1-args.alpha)*b_t_score
 
+                w_s_score = np.sum(w_s_snippets_scores)
+                w_t_score = np.sum(w_t_snippets_scores)
+                w_score = args.alpha*w_s_score + (1-args.alpha)*w_t_score
+
+                if b_score > w_score:
+                    positive += 1
+                else:
+                    negative += 1
+
+                if b_s_score > w_s_score:
+                    positive_spatial += 1
+                else:
+                    negative_spatial += 1
+
+                if b_t_score > w_t_score:
+                    positive_temporal += 1
+                else:
+                    negative_temporal += 1
+        print("Input file: {}".format(input_csv))
+        print("alpha: {}".format(args.alpha))
+        print("Snippets: {}".format(args.snippets))
+        print("Accurarcy: {:.3f}".format(positive/(positive+negative)))
+        print("Spatial Accuracy: {:.3f}".format(positive_spatial/(positive_spatial+negative_spatial)))
+        print("Temporal Accuracy: {:.3f}".format(positive_temporal/(positive_temporal+negative_temporal)))
+
+'''
+python evaluate.py \
+    -sm models/split_2/spatial_models_21/spatial_model_iter_3500.h5 \
+    -tm models/split_2/temporal_models_21/temporal_model_iter_1000.h5 \
+    -i split_2/val.csv
+'''
