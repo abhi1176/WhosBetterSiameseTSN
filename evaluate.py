@@ -64,6 +64,7 @@ if __name__ == "__main__":
 
         spatial_iterator = iter(spatial_dataset)
         temporal_iterator = iter(temporal_dataset)
+        outputs = []
         for i in range(num_batches):
             print("[INFO] {}/{}: Running with batch_size: {}"
                   .format(i+1, num_batches, args.batch_size))
@@ -80,7 +81,7 @@ if __name__ == "__main__":
                 w_s_score = np.sum(w_s_snippets_scores)
                 w_t_score = np.sum(w_t_snippets_scores)
                 w_score = args.alpha*w_s_score + (1-args.alpha)*w_t_score
-
+                outputs.append(b_score > w_score)
                 if b_score > w_score:
                     positive += 1
                 else:
@@ -95,6 +96,9 @@ if __name__ == "__main__":
                     positive_temporal += 1
                 else:
                     negative_temporal += 1
+        seq_df["WhoIsBetter"] = pd.Series(outputs)
+        seq_df["WhoIsBetter"].map({True: seq_df["Better"], False: seq_df["Worse"]})
+        seq_df.to_csv("{}_output.csv".format(sequence))
         print("Input file: {}".format(input_csv))
         print("alpha: {}".format(args.alpha))
         print("Snippets: {}".format(args.snippets))

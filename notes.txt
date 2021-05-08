@@ -1,0 +1,104 @@
+Input file: split_1/ChopstickUsing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.792
+Spatial Accuracy: 0.646
+Temporal Accuracy: 0.833
+
+Input file: split_1/DoughRolling.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.622
+Spatial Accuracy: 0.568
+Temporal Accuracy: 0.459
+
+Input file: split_1/HandDrawing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.727
+Spatial Accuracy: 0.894
+Temporal Accuracy: 0.727
+
+Input file: split_1/Knot_Tying.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.842
+Spatial Accuracy: 0.831
+Temporal Accuracy: 0.585
+
+Input file: split_1/Needle_Passing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.497
+Spatial Accuracy: 0.503
+Temporal Accuracy: 0.610
+
+Input file: split_1/SonicDrawing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.596
+Spatial Accuracy: 0.577
+Temporal Accuracy: 0.577
+
+Input file: split_1/Suturing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.519
+Spatial Accuracy: 0.516
+Temporal Accuracy: 0.462
+
+
+Input file: split_2/ChopstickUsing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.812
+Spatial Accuracy: 0.867
+Temporal Accuracy: 0.663
+
+
+Input file: split_2/DoughRolling.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.750
+Spatial Accuracy: 0.679
+Temporal Accuracy: 0.726
+
+
+Input file: split_2/HandDrawing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.904
+Spatial Accuracy: 0.885
+Temporal Accuracy: 0.962
+
+
+Input file: split_2/Knot_Tying.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.762
+Spatial Accuracy: 0.707
+Temporal Accuracy: 0.783
+
+
+Input file: split_2/Needle_Passing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.852
+Spatial Accuracy: 0.893
+Temporal Accuracy: 0.704
+
+
+Input file: split_2/SonicDrawing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.849
+Spatial Accuracy: 0.811
+Temporal Accuracy: 0.679
+
+
+Input file: split_2/Suturing.csv
+alpha: 0.4
+Snippets: 25
+Accurarcy: 0.634
+Spatial Accuracy: 0.615
+Temporal Accuracy: 0.672
