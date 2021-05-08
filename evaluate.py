@@ -96,9 +96,8 @@ if __name__ == "__main__":
                     positive_temporal += 1
                 else:
                     negative_temporal += 1
-        seq_df["WhoIsBetter"] = pd.Series(outputs)
-        seq_df["WhoIsBetter"].map({True: seq_df["Better"], False: seq_df["Worse"]})
-        seq_df.to_csv("{}_output.csv".format(sequence))
+        seq_df["BetterIsBetter"] = pd.Series(outputs)
+        seq_df.to_csv("{}_output.csv".format(os.path.basename(sequence)))
         print("Input file: {}".format(input_csv))
         print("alpha: {}".format(args.alpha))
         print("Snippets: {}".format(args.snippets))
@@ -108,8 +107,8 @@ if __name__ == "__main__":
 
 '''
 python evaluate.py \
-    -sm models/split_1/spatial_model.h5 \
-    -tm models/split_1/temporal_model.h5 \
+    -sm models/split_1/spatial_models_21/spatial_model_iter_2010.h5 \
+    -tm models/split_1/temporal_models_21/temporal_model_iter_0290.h5 \
     -i split_1/val.csv
 
 python evaluate.py \

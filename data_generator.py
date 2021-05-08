@@ -37,15 +37,15 @@ def rgb_snippets_generator(csv_file, num_snippets, validation=False):
         i = 0
         while True:
             row = df.iloc[i, :]
+            better_rgb_snippets = get_rgb_snippets(row['Better'], num_snippets)
+            worse_rgb_snippets = get_rgb_snippets(row['Worse'], num_snippets)
+            labels = row['label']
+            yield (better_rgb_snippets, worse_rgb_snippets), labels
             i = (i+1)%n
             if i == 0:  # Shuffle if all of the dataframe is consumed
                 if validation:
                     break
                 df = df.sample(frac=1)
-            better_rgb_snippets = get_rgb_snippets(row['Better'], num_snippets)
-            worse_rgb_snippets = get_rgb_snippets(row['Worse'], num_snippets)
-            labels = row['label']
-            yield (better_rgb_snippets, worse_rgb_snippets), labels
     return process
 
 
@@ -87,15 +87,15 @@ def flow_snippets_generator(csv_file, num_snippets, validation=False):
         i = 0
         while True:
             row = df.iloc[i, :]
+            better_flow_snippets = get_flow_snippets(row['Better'], num_snippets)
+            worse_flow_snippets = get_flow_snippets(row['Worse'], num_snippets)
+            labels = row['label']
+            yield (better_flow_snippets, worse_flow_snippets), labels
             i = (i+1)%n
             if i == 0:  # Shuffle if all of the dataframe is consumed
                 if validation:
                     break
                 df = df.sample(frac=1)
-            better_flow_snippets = get_flow_snippets(row['Better'], num_snippets)
-            worse_flow_snippets = get_flow_snippets(row['Worse'], num_snippets)
-            labels = row['label']
-            yield (better_flow_snippets, worse_flow_snippets), labels
     return process
 
 
